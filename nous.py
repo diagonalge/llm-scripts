@@ -1,7 +1,9 @@
 from transformers import AutoTokenizer, pipeline, logging
 from auto_gptq import AutoGPTQForCausalLM, BaseQuantizeConfig
+import random
 import argparse
 import time
+import torch
 
 model_name_or_path = "TheBloke/Nous-Hermes-13B-GPTQ"
 model_basename = "nous-hermes-13b-GPTQ-4bit-128g.no-act.order"
@@ -20,13 +22,19 @@ model = AutoGPTQForCausalLM.from_quantized(model_name_or_path,
 
 
 def generate(character_name, persona, prompt, chat_history = None):
+    temp = random.randint(40,120) / 100
+    p = random.randint(70, 110) / 100
+    k = random.randint(15,50)
+    rep = random.randint(10,15) / 10
+    seed = random.randint(1,100000)
+
     if input is not None:
-        prompt_template = f'''### Instruction: Continue the conversation as {character_name}. {persona}\n### Input: \n{chat_history}\n### You: {prompt}\n### {character_name}: '''
+        prompt_template = f'''### Instruction: Give a single reply as {character_name}. Do not use any emojis! {persona}\n### Input: \n{chat_history}\n### You: {prompt}\n### {character_name}: '''
     else:
-        prompt_template = f'''### Instruction: Continue the conversation as {character_name}. {persona}\n### You: {prompt}\n### {character_name}: '''
+        prompt_template = f'''### Instruction: Give a single reply as {character_name}. Do not use any emojis! {persona}\n### You: {prompt}\n### {character_name}: '''
 
     input_ids = tokenizer(prompt_template, return_tensors='pt').input_ids.cuda()
-    output = model.generate(inputs=input_ids, temperature=0.7, max_new_tokens=512)
+    output = model.generate(inputs=input_ids, temperature=temp, top_p = p, top_k = k, repetition_penalty=rep, max_new_tokens=512)
     return tokenizer.decode(output[0])
 
 char_name = "Shinobu"
@@ -40,4 +48,6 @@ You: do you think humans and demon can coexist?
 Shinobu: As much as I believe in the inherent goodness of the human heart, I'm afraid demons are far too dangerous to coexist alongside humanity. From my experiences, demons only seek to harm humans and become more powerful in the process. However, there may be rare cases where a demon seeks redemption and wishes to break free from their curse. In such cases, I would like to believe that coexistence could be a possibility, but it would require much caution and careful consideration.'''
 
 prompt = "why do you hate demons so much?"
-print(generate(char_name, persona, prompt, chat_history))
+
+for i in range(10):
+    print(generate(char_name, persona, prompt, chat_history))
